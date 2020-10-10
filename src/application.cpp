@@ -8,7 +8,7 @@ Application::Application()
 {
 	setTitle("Application");
 
-	ImGui::Init(sdlWindow(), context());
+    ImGui::Init(sdlWindow(), context());
 }
 
 Application::~Application()
@@ -26,4 +26,9 @@ void Application::update(float dt)
 void Application::processEvent(const SDL_Event &event)
 {
 	ImGui::ProcessEvent(event);
+}
+
+void Application::sizeChanged(int w, int h)
+{
+    glViewport(0, 0, w, h);
 }

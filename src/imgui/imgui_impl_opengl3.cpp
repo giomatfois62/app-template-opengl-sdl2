@@ -116,8 +116,7 @@
 #include <glad/glad.h>  // Needs to be initialized with gladLoadGL() in user's code
 #else
 //#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#include <epoxy/gl.h>
-#include <epoxy/glx.h>
+#include <GL/glew.h>    // Needs to be initialized with glewInit() in user's code
 #endif
 #endif
 

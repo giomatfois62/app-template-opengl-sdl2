@@ -9,8 +9,9 @@ class Application : public gl::OpenGLWindow {
 		~Application();
 
 	protected:
-		void update(float dt);
-		void processEvent(const SDL_Event &event);
+		void update(float dt) override;
+		void processEvent(const SDL_Event &event) override;
+        void sizeChanged(int w, int h) override;
 };
 
 #endif

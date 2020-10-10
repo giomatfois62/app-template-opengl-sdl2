@@ -1,4 +1,4 @@
-#ifndef OPENGL_H
+﻿#ifndef OPENGL_H
 #define OPENGL_H
 
 #include <iostream>
@@ -11,200 +11,154 @@
 #include <unordered_map>
 #include <thread>
 
-#include <epoxy/gl.h>
-#include <epoxy/glx.h>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <GL/glew.h>
+#include <GL/glu.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#include "camera.h"
 #include "volumes.h"
 #include "sparse_vector.h"
 
 namespace gl {
+	class Shader {
+		public:
+			Shader();
+			Shader(const char *vertexPath, const char *fragmentPath);
 
-class Camera {
+			unsigned int program();
 
-public:
-        enum Mode {
-                PERSPECTIVE,
-                ORTHO
-        };
+			void setMat4(const std::string &name, const glm::mat4 &value);
+			void setMat3(const std::string &name, const glm::mat3 &value);
+			void setInt(const std::string &name, const int &value);
+			void setFloat(const std::string &name, const float &value);
 
-        Camera();
+		private:
+			unsigned int m_vertex;
+			unsigned int m_fragment;
+			unsigned int m_program;
 
-        glm::mat4 view();
-        glm::mat4 projection();
+			std::map<std::string, int> m_uniforms;
 
-        // TODO change position/direction functions
-        Mode mode;
+			bool addFromFile(int type, const char *path);
+			bool addFromSource(int type, const char *src);
+			bool link();
 
-        glm::vec3 position;
-        glm::vec3 direction;
-        glm::vec3 up;
+			int uniformLocation(const std::string &name);
+	};
 
-        float fov;
-        float zNear, zFar, aspect;
-        float width, height;
-        float left, right, top, bottom;
-};
+	struct Texture {
+			unsigned int id;
+			std::string type;
+			std::string path;
 
-class Shader {
-public:
-        Shader();
-        Shader(const char *vertexPath, const char *fragmentPath);
+			Texture(unsigned int id, const char* type, const char* path);
 
-        unsigned int program();
+			static Texture loadFromPath(const char* path, const char* type);
+			static Texture loadFromImage(unsigned char* image, int w, int h, int ch, const char* type);
+	};
 
-        void setMat4(const std::string &name, const glm::mat4 &value);
-        void setMat3(const std::string &name, const glm::mat3 &value);
-        void setInt(const std::string &name, const int &value);
-        void setFloat(const std::string &name, const float &value);
+	struct Vertex {
+			glm::vec3 pos;
+			glm::vec3 normal;
+			glm::vec3 color;
+			glm::vec2 texCoords;
 
-private:
-        unsigned int m_vertex;
-        unsigned int m_fragment;
-        unsigned int m_program;
+			bool operator==(const Vertex& other) const;
+	};
 
-        std::map<std::string, int> m_uniforms;
+	class Mesh {
+		public:
+			Mesh();
 
-        bool addFromFile(int type, const char *path);
-        bool addFromSource(int type, const char *src);
-        bool link();
+			Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
+			std::vector<Texture> textures);
 
-        int uniformLocation(const std::string &name);
-};
+			~Mesh();
 
-struct Texture {
-        unsigned int id;
-        std::string type;
-        std::string path;
+            void cleanup();
 
-        Texture(unsigned int id, const char* type, const char* path);
+			void updateVBO();
+            void updateInstancesVBO(glm::mat4 *instances, size_t count);
 
-        static Texture loadFromPath(const char* path, const char* type);
-        static Texture loadFromImage(unsigned char* image, int w, int h, int ch, const char* type);
-};
+            unsigned int VAO = 0, VBO, EBO, intancesVBO;
 
-struct Vertex {
-        glm::vec3 pos;
-        glm::vec3 normal;
-        glm::vec3 color;
-        glm::vec2 texCoords;
+			std::vector<Vertex> vertices;
+			std::vector<unsigned int> indices;
+			std::vector<Texture> textures;
+            Volume volume;
 
-        bool operator==(const Vertex& other) const;
+		private:
+            size_t instancesDrawn = 0;
 
-        friend std::ostream &operator<<(std::ostream& strm, const Vertex& v)
-        {
-                strm << "position : (" << v.pos[0] << "," << v.pos[1] << "," << v.pos[2] << "), ";
-                strm << "normal : (" << v.normal[0] << "," << v.normal[1] << "," << v.normal[2] << "), ";
-                strm << "color : (" << v.color[0] << "," << v.color[1] << "," << v.color[2] << "), ";
-                strm << "texCoords : (" << v.texCoords[0] << "," << v.texCoords[1] << ")";
-                strm << std::endl;
+			void setup();
+	};
 
-                return strm;
-        }
-};
+	class Model {
+		public:
+			Model();
+			Model(const std::vector<Mesh> &meshes);
+			Model(const std::string &path);
 
-class Mesh {
-public:
-        Mesh();
+			~Model();
 
-        Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
-             std::vector<Texture> textures);
+			std::vector<Mesh> meshes;
 
-        ~Mesh();
+		private:
+			std::string m_path;
 
-        Volume volume();
+			std::string pathFromFileName(const std::string &fileName);
 
-        void updateVBO();
-        void updateInstancesVBO();
+			void load(const std::string &path);
+	};
 
-        unsigned int VAO, VBO, EBO, intancesVBO;
+	class OpenGLScene {
+		public:
+			Camera camera;
+			std::map<std::string, Model> models;
+			std::map<std::string, Mesh*> meshes;
+			std::map<std::string, Shader> shaders;
+			// TODO lights
+	};
 
-        std::vector<Vertex> vertices;
-        std::vector<unsigned int> indices;
-        std::vector<Texture> textures;
+	class OpenGLWindow {
+		public:
+			OpenGLWindow();
+			~OpenGLWindow();
 
-        sparse_vector<glm::mat4> instances;
-        glm::mat4 transform;
+			void setTitle(const char *title);
+            void run();
+			void close();
+			float fps();
+			uint32_t lag();
+			bool isRunning();
+			bool aboutToBeClosed();
 
-private:
-        Volume m_volume;
-        size_t m_instancesDrawn;
+			OpenGLScene *scene();
+			SDL_Window *sdlWindow();
+			SDL_GLContext context();
 
-        void setup();
-};
+		protected:
+			virtual void update(float dt);
+			virtual void processEvent(const SDL_Event &event);
+            virtual	void sizeChanged(int w, int h);
 
-class Model {
-public:
-        Model();
-        Model(const std::vector<Mesh> &meshes);
-        Model(const std::string &path);
+			int width, height;
 
-        ~Model();
+		private:
+			void processEvents();
 
-        size_t addInstance(const glm::mat4 &transform);
-        void removeInstance(size_t index);
+			OpenGLScene *m_scene;
+			SDL_Window *m_window;
+			SDL_GLContext m_context;
 
-        std::vector<Mesh> meshes;
+			uint32_t m_elapsed;
+			uint32_t m_lag;
 
-private:
-        std::string m_path;
-
-        std::string pathFromFileName(const std::string &fileName);
-
-        void load(const std::string &path);
-};
-
-class OpenGLScene {
-public:
-        Camera camera;
-        std::map<std::string, Model> models;
-        std::map<std::string, Mesh*> meshes;
-        std::map<std::string, Shader> shaders;
-        // TODO lights
-};
-
-class OpenGLWindow {
-public:
-	OpenGLWindow();
-        ~OpenGLWindow();
-
-	void setTitle(const char *title);
-        void show();
-        void resize(int width, int height);
-        void close();
-        float fps();
-        uint32_t lag();
-        bool isRunning();
-        bool aboutToBeClosed();
-
-        OpenGLScene *scene();
-        SDL_Window *sdlWindow();
-        SDL_GLContext context();
-
-protected:
-        virtual void update(float dt);
-        virtual void processEvent(const SDL_Event &event);
-
-private:
-        void processEvents();
-
-        OpenGLScene *m_scene;
-        SDL_Window *m_window;
-        SDL_GLContext m_context;
-
-        uint32_t m_elapsed;
-        uint32_t m_lag;
-
-        bool m_running;
-        bool m_open;
-};
+			bool m_running;
+			bool m_open;
+	};
 
 } // namespace gl
 

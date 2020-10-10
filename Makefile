@@ -23,7 +23,7 @@ DEPS = $(CXXOBJ:.o=.d)
 
 BIN = application
 
-BINDEPS = sdl2 epoxy
+BINDEPS = sdl2 glew
 
 BUILDFLAGS =  -pthread -O3 -flto -fopenmp -Wall -std=c++17
 LDFLAGS = $(shell $(PKG_CONFIG) --libs $(BINDEPS))

@@ -20,7 +20,9 @@ Mesh triangle()
 
     std::vector<unsigned int> indices = {0, 1, 2};
 
-    std::vector<Texture> textures;
+   std::vector<Texture> textures = {
+   Texture::loadFromPath("res/smile.png", "texture_diffuse")
+   };
 
     return Mesh(vertices, indices, textures);
 }
@@ -36,7 +38,9 @@ Mesh quad()
 
     std::vector<unsigned int> indices = {0, 1, 2, 2, 3, 0};
 
-    std::vector<Texture> textures;
+	std::vector<Texture> textures = {
+	Texture::loadFromPath("res/smile.png", "texture_diffuse")
+	};
 
     return Mesh(vertices, indices, textures);
 }
