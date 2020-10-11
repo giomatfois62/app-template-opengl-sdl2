@@ -34,3 +34,4 @@
 bin/*
 .vscode/
 imgui.ini
+*.txt.user
